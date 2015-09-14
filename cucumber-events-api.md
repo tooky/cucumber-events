@@ -2,15 +2,17 @@
 
 [Cucumber Ruby 2.1][cuke-2.1] introduces the new [Events API][events] &mdash; a simple way to find out what's happening while Cucumber runs your features. Events are read-only and simplify the process of writing formatters, and other output tools.
 
+I'll illustate how to use the API with a worked example that streams Cucumber test results to a browser in real-time.
+
 ## Can you give me an example?
 
-As much as we love our console applications, we can get a much richer experience in a web browser. How could we get Cucumber to push information into a nice web UI, without losing the rich information available with the built-in formatters.
+As much as we love our console applications, we can get a much richer experience in a web browser. How could we get Cucumber to push information into a nice web UI, without losing the rich information available with the built-in formatters?
 
 Let's build a super-simple example using the Events API that uses a websocket to update a web page while cucumber is running.
 
-There's lots of ways to run a websocket server – a favourite of mine is to use [`websocketd`][websocketd] because it's _super_ simple. Give it an executable that reads `STDIN` and write `STDOUT` and your done!
+There's lots of ways to run a websocket server – a favourite of mine is to use [`websocketd`][websocketd] because it's _super_ simple. Give it an executable that reads `STDIN` and write `STDOUT` and you're done!
 
-For our very simple websocket reporter we are going to use a UNIX [named pipe][fifo] to push information out of our cucumber process. To get these events out onto a websocket we need a very simple shell command that reads from a named pipe and echos back onto `STDOUT`.
+For our very simple websocket reporter we are going to use a UNIX [named pipe][fifo] to push information out of our cucumber process. To get these events out onto a websocket we need a shell command that reads from a named pipe and echos back onto `STDOUT`.
 
 `subscriber.sh`
 
@@ -35,7 +37,7 @@ When you run it, it will create an `events` named pipe if one doesn't exist alre
 
 ### Writing Cucumber Events to the pipe
 
-Let's start by asking cucumber to write messages to the pipe, add the following to `features/support/env.rb`
+Let's start by asking cucumber to write messages to the pipe. Add the following to `features/support/env.rb`
 
 ```ruby
 EVENT_PIPE = "events"
@@ -53,11 +55,11 @@ at_exit {
 }
 ```
 
-This should hook up cucumber to write to the same named pipe as `subscriber.sh` will read from. With `subscriber.sh` up and running, you should be able to run cucumber and see `started` and `done` output to the terminal by `subscriber.sh`.
+This doesn't use the Events API yet, but we've got the plumbing in place now to write to the same named pipe as `subscriber.sh` will read from. With `subscriber.sh` up and running, you should be able to run cucumber and see `started` and `done` output to the terminal by `subscriber.sh`.
 
-For our simple web-browser cucumber reporter we want to show each step that cucumber runs, and it's result. We want cucumber to tell us when it starts to execute, when it starts to run each step, when it finishes a step (and what the result was) and when it's finished executing.
+For our simple web-browser cucumber reporter we want to show each step that cucumber runs, and its result. We want cucumber to tell us when it starts to execute, when it starts to run each step, when it finishes a step (and what the result was) and when it's finished executing.
 
-We want to send some formatted JSON that give us some information about the events:
+We'll send some formatted JSON that give us some information about the events:
 
 ```js
 {
@@ -86,7 +88,7 @@ at_exit {
 }
 ```
 
-The Cucumber Events API gives us access to what's going on inside Cucumber while it's running our features. We want to know when a step is going to be run, and what happened when it finished. Cucumber provides us the [`BeforeTestStep`][before_test_step] and [`AfterTestStep`][after_test_step] events. To sign up to hear about these events we can use the cucumber `AfterConfiguration` hook to get access to the current config, and add handlers for specific events with the `on_event` method:
+The Cucumber Events API gives us access to what's going on inside Cucumber while it's running our features. We want to know when a step is going to be run, and what happened when it finished. Cucumber provides us the [`BeforeTestStep`][before_test_step] and [`AfterTestStep`][after_test_step] events. To hear about these events we can use the cucumber `AfterConfiguration` hook to get access to the current config, and add handlers for specific events with the `on_event` method:
 
 ```ruby
 AfterConfiguration do |config|
@@ -177,7 +179,7 @@ Clicking the little "✔" in the top left will connect the `websocketd`'s dev co
 
 ### WebSocket Cucumber
 
-Finishing everything up, lets create a simple web-page that uses the websocket to get information from Cucumber as its running. Save this as `index.html`:
+Finishing everything up, lets create a simple web-page that uses the websocket to get information from Cucumber as it's running. Save this as `index.html`:
 
 ```html
 <!DOCTYPE html>
@@ -289,7 +291,7 @@ Cucumber 2 introduced a new model for executing a set of features. Each scenario
 
 ## What can I use it for?
 
-The Events API is there for getting information out of Cucumber. It's going to be the best way to write new formatters in future &mdash; the old formatter API will be removed in Cucumber 3.0. If you're looking for a way to contribute to Cucumber then rewriting some of the old [formatters][formatters] to use the new events API.
+The Events API is there for getting information out of Cucumber. It's going to be the best way to write new formatters in future &mdash; the old formatter API will be removed in Cucumber 3.0. If you're looking for a way to contribute to Cucumber then [rewriting some of the old formatters][formatters-issue] to use the new events API would be a tremendous help.
 
 Any questions please come and join us on our [gitter channel][gitter] or the [mailing list][mailinglist]. All the code for this blog post is [available here][code].
 
@@ -302,7 +304,7 @@ Any questions please come and join us on our [gitter channel][gitter] or the [ma
 [after_test_case]: http://www.rubydoc.info/gems/cucumber/Cucumber/Events/AfterTestCase
 [before_test_case]: http://www.rubydoc.info/gems/cucumber/Cucumber/Events/BeforeTestCase
 [step_match]: http://www.rubydoc.info/gems/cucumber/Cucumber/Events/StepMatch
-[formatters]: https://github.com/cucumber/cucumber-ruby/tree/master/lib/cucumber/formatter
+[formatters-issue]: https://github.com/cucumber/cucumber-ruby/issues/839
 [gitter]: https://gitter.im/cucumber/chat
 [mailinglist]: https://groups.google.com/forum/#!forum/cukes
 [code]: https://github.com/tooky/cucumber-events
